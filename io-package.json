@@ -1,0 +1,116 @@
+{
+    "common": {
+        "name": "smart-eq",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "zh-cn": "首次出版"
+            }
+        },
+        "title": "Smart EQ",
+        "titleLang": {
+            "en": "Smart EQ",
+            "de": "Intelligenter EQ",
+            "ru": "Умный эквалайзер",
+            "pt": "EQ inteligente",
+            "nl": "Slimme EQ",
+            "fr": "Égaliseur intelligent",
+            "it": "Equalizzatore intelligente",
+            "es": "Ecualizador inteligente",
+            "pl": "Inteligentny korektor",
+            "zh-cn": "智能均衡器"
+        },
+        "desc": {
+            "en": "Adapter for Smart EQ",
+            "de": "Adapter für Smart EQ",
+            "ru": "Адаптер для Smart EQ",
+            "pt": "Adaptador para Smart EQ",
+            "nl": "Adapter voor slimme EQ",
+            "fr": "Adaptateur pour Smart EQ",
+            "it": "Adattatore per Smart EQ",
+            "es": "Adaptador para Smart EQ",
+            "pl": "Adapter do Smart EQ",
+            "zh-cn": "智能均衡器适配器"
+        },
+        "authors": [
+            "TA2k <tombox2020@gmail.com>"
+        ],
+        "keywords": [
+            "smart",
+            "smart eq"
+        ],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "main": "main.js",
+        "icon": "smart-eq.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/TA2k/ioBroker.smart-eq/master/admin/smart-eq.png",
+        "readme": "https://github.com/TA2k/ioBroker.smart-eq/blob/master/README.md",
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "vehicle",
+        "compact": true,
+        "connectionType": "cloud",
+        "dataSource": "poll",
+        "materialize": true,
+        "plugins": {
+            "sentry": {
+                "dsn": "https://c9bd6c851b1246da95e6e982aa9b88f3@sentry.iobroker.net/152"
+            }
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=3.0.0"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=4.0.9"
+            }
+        ]
+    },
+    "encryptedNative": [
+        "password"
+    ],
+    "protectedNative": [
+        "password"
+    ],
+    "native": {
+        "username": "",
+        "password": "",
+        "interval": 10
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}
