@@ -26,7 +26,7 @@ smart-eq.0.vin.remote auf true setzen steuert den jeweiligen Befehl
 
 ## Diskussion und Fragen
 
-<https://forum.iobroker.net/topic/>
+<https://forum.iobroker.net/topic/49548/test-adapter-smart-eq-v0-0-x>
 
 ## Changelog
 

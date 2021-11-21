@@ -11,7 +11,7 @@ const axios = require("axios");
 const qs = require("qs");
 const crypto = require("crypto");
 const Json2iob = require("./lib/json2iob");
-const axiosCookieJarSupport = require("axios-cookiejar-support").default;
+const { wrapper } = require("axios-cookiejar-support");
 const tough = require("tough-cookie");
 
 class SmartEq extends utils.Adapter {
@@ -41,9 +41,8 @@ class SmartEq extends utils.Adapter {
             this.log.info("Set interval to minimum 0.5");
             this.config.interval = 0.5;
         }
-        axiosCookieJarSupport(axios);
         this.cookieJar = new tough.CookieJar();
-        this.requestClient = axios.create();
+        this.requestClient = wrapper(axios.create({ jar: this.cookieJar }));
         this.updateInterval = null;
         this.reLoginTimeout = null;
         this.refreshTokenTimeout = null;
@@ -81,7 +80,7 @@ class SmartEq extends utils.Adapter {
         })
             .then((res) => {
                 this.log.debug(JSON.stringify(res.data));
-                return qs.parse(res.location).resume;
+                return qs.parse(res.request.path.split("?")[1]).resume;
             })
             .catch((error) => {
                 this.log.error(error);
@@ -152,7 +151,7 @@ class SmartEq extends utils.Adapter {
         }
         const code = await this.requestClient({
             method: "post",
-            url: "https://id.mercedes-benz.com/" + resume,
+            url: "https://id.mercedes-benz.com" + resume,
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
                 Accept: "application/json, text/plain, */*",
@@ -162,14 +161,11 @@ class SmartEq extends utils.Adapter {
             },
             jar: this.cookieJar,
             withCredentials: true,
-            data: {
-                token: token,
-            },
+            data: "token=" + token,
         })
             .then((res) => {
                 this.log.debug(JSON.stringify(res.data));
-                this.session = res.data;
-                return qs.parse(res.location).code;
+                return qs.parse(res.request.path.split("?")[1]).code;
             })
             .catch((error) => {
                 this.log.error(error);
@@ -189,13 +185,8 @@ class SmartEq extends utils.Adapter {
             },
             jar: this.cookieJar,
             withCredentials: true,
-            data: {
-                grant_type: "authorization_code",
-                code: code,
-                redirect_uri: "https://oneapp.microservice.smart.com",
-                code_verifier: code_verifier,
-                client_id: "70d89501-938c-4bec-82d0-6abb550b0825",
-            },
+            data:
+                "grant_type=authorization_code&code=" + code + "&code_verifier=" + code_verifier + "&redirect_uri=https://oneapp.microservice.smart.com&client_id=70d89501-938c-4bec-82d0-6abb550b0825",
         })
             .then((res) => {
                 this.log.debug(JSON.stringify(res.data));
@@ -258,7 +249,7 @@ class SmartEq extends utils.Adapter {
 
                     const remoteArray = [{ command: "precond", name: "True = Start, False = Stop" }];
                     remoteArray.forEach((remote) => {
-                        this.setObjectNotExists(device.vin + ".remote." + remote.command, {
+                        this.setObjectNotExists(vin + ".remote." + remote.command, {
                             type: "state",
                             common: {
                                 name: remote.name || "",
@@ -270,6 +261,27 @@ class SmartEq extends utils.Adapter {
                             native: {},
                         });
                     });
+
+                    await this.requestClient({
+                        method: "get",
+                        url: "https://oneapp.microservice.smart.com/seqc/v0/vehicles/" + vin + "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE",
+                        headers: {
+                            accept: "*/*",
+                            "accept-language": "de-DE;q=1.0",
+                            authorization: "Bearer " + this.session.access_token,
+                            "x-applicationname": "70d89501-938c-4bec-82d0-6abb550b0825",
+                            "user-agent": "Device: iPhone 6; OS-version: iOS_12.5.1; App-Name: smart EQ control; App-Version: 3.0; Build: 202108260942; Language: de_DE",
+                            guid: "280C6B55-F179-4428-88B6-E0CCF5C22A7C",
+                        },
+                    })
+                        .then(async (res) => {
+                            this.log.debug(JSON.stringify(res.data));
+                            this.json2iob.parse(vin, res.data);
+                        })
+                        .catch((error) => {
+                            this.log.error(error);
+                            error.response && this.log.error(JSON.stringify(error.response.data));
+                        });
                 }
             })
             .catch((error) => {
@@ -399,7 +411,7 @@ class SmartEq extends utils.Adapter {
                     return;
                 }
                 const deviceId = id.split(".")[2];
-                const command = id.split(".")[3];
+                const command = id.split(".")[4];
                 let value;
                 let data;
                 if (command === "precond") {
