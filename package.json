@@ -1,6 +1,6 @@
 {
   "name": "iobroker.smart-eq",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Adapter for Smart EQ",
   "author": {
     "name": "TA2k",
