@@ -254,6 +254,7 @@ class SmartEq extends utils.Adapter {
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));
           this.session = res.data;
+          this.setState("auth.session", JSON.stringify(this.session), true);
           this.setState("info.connection", true, true);
         })
         .catch((error) => {
