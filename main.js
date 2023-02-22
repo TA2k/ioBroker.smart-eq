@@ -278,7 +278,7 @@ class SmartEq extends utils.Adapter {
   async getDeviceList() {
     await this.requestClient({
       method: "get",
-      url: "https://oneapp.microservice.smart.com/seqc/v0/users/current",
+      url: "https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/users/current",
       headers: {
         accept: "*/*",
         "accept-language": "de-DE;q=1.0",
@@ -328,7 +328,10 @@ class SmartEq extends utils.Adapter {
 
           await this.requestClient({
             method: "get",
-            url: "https://oneapp.microservice.smart.com/seqc/v0/vehicles/" + vin + "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE",
+            url:
+              "https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/" +
+              vin +
+              "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE",
             headers: {
               accept: "*/*",
               "accept-language": "de-DE;q=1.0",
@@ -359,7 +362,7 @@ class SmartEq extends utils.Adapter {
     const statusArray = [
       {
         path: "",
-        url: "https://oneapp.microservice.smart.com/seqc/v0/vehicles/$vin/refresh-data",
+        url: "https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/$vin/refresh-data",
       },
     ];
 
@@ -491,7 +494,7 @@ class SmartEq extends utils.Adapter {
             type: "immediate",
           };
         }
-        const url = "https://oneapp.microservice.smart.com/seqc/v0/vehicles/" + deviceId + "/" + command + "/" + value;
+        const url = "https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/" + deviceId + "/" + command + "/" + value;
         this.log.debug(JSON.stringify(data));
         this.log.debug(url);
         await this.requestClient({
