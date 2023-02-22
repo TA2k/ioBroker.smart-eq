@@ -43,6 +43,11 @@ class SmartEq extends utils.Adapter {
       this.config.interval = 0.5;
     }
     this.cookieJar = new tough.CookieJar();
+    const cookies = await this.getStateAsync("auth.cookies");
+    if (cookies && cookies.val) {
+      this.cookieJar = tough.CookieJar.fromJSON(cookies.val);
+    }
+
     this.requestClient = wrapper(axios.create({ jar: this.cookieJar }));
     this.updateInterval = null;
     this.reLoginTimeout = null;
@@ -75,8 +80,9 @@ class SmartEq extends utils.Adapter {
     }
   }
   async login() {
-    if (!this.config.mfa) {
+    if (!this.config.otp) {
       const [code_verifier, codeChallenge] = this.getCodeChallenge();
+      this.session.code_verifier = code_verifier;
       this.session.resume = await this.requestClient({
         method: "get",
         url:
@@ -120,8 +126,6 @@ class SmartEq extends utils.Adapter {
       })
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));
-          this.session = res.data;
-          this.setState("info.connection", true, true);
         })
         .catch((error) => {
           this.log.error(error);
@@ -160,24 +164,28 @@ class SmartEq extends utils.Adapter {
             this.log.error(JSON.stringify(error.response.data));
           }
         });
+
+      this.setState("auth.session", JSON.stringify(this.session), true);
+      this.setState("auth.cookies", JSON.stringify(this.cookieJar.toJSON()), true);
     } else {
       const token = await this.requestClient({
         method: "post",
         url: "https://id.mercedes-benz.com/ciam/auth/login/otp",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
           Accept: "application/json, text/plain, */*",
-          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+          "User-Agent":
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.",
           Referer: "https://id.mercedes-benz.com/ciam/auth/login",
           "Accept-Language": "de-de",
         },
         jar: this.cookieJar,
         withCredentials: true,
-        data: {
-          password: this.config.mfa,
-          rememberMe: true,
+        data: JSON.stringify({
+          password: this.config.otp,
+          rememberMe: false,
           username: this.config.username,
-        },
+        }),
       })
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));
@@ -196,6 +204,10 @@ class SmartEq extends utils.Adapter {
             this.setForeignObject(adapterConfig, obj);
           }
         });
+      if (!token) {
+        this.log.error("Missing token");
+        return;
+      }
       const code = await this.requestClient({
         method: "post",
         url: "https://id.mercedes-benz.com" + this.session.resume,
@@ -236,8 +248,8 @@ class SmartEq extends utils.Adapter {
           "grant_type=authorization_code&code=" +
           code +
           "&code_verifier=" +
-          code_verifier +
-          "&redirect_uri=https://oneapp.microservice.smart.com&client_id=70d89501-938c-4bec-82d0-6abb550b0825",
+          this.session.code_verifier +
+          "&redirect_uri=https://oneapp.microservice.smart.mercedes-benz.com",
       })
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));

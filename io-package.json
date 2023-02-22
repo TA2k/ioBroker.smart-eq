@@ -107,6 +107,18 @@
       "native": {}
     },
     {
+      "_id": "auth.cookies",
+      "type": "state",
+      "common": {
+        "role": "json",
+        "name": "Cookie state",
+        "type": "string",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
       "_id": "info",
       "type": "channel",
       "common": {
