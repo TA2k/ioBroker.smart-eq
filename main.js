@@ -29,6 +29,7 @@ class SmartEq extends utils.Adapter {
     this.deviceArray = [];
     this.json2iob = new Json2iob(this);
     this.ignoreState = [];
+    this.session = {};
   }
 
   /**
@@ -46,11 +47,22 @@ class SmartEq extends utils.Adapter {
     this.updateInterval = null;
     this.reLoginTimeout = null;
     this.refreshTokenTimeout = null;
-    this.session = {};
     this.subscribeStates("*");
 
-    await this.login();
+    const sessionState = await this.getStateAsync("auth.session");
 
+    if (sessionState && sessionState.val) {
+      this.log.debug("Found current session");
+      this.session = JSON.parse(sessionState.val);
+    }
+
+    if (this.session.refresh_token) {
+      this.log.info("Resume session from last login");
+      await this.refreshToken();
+    } else {
+      this.log.info("Login with username and password");
+      await this.login();
+    }
     if (this.session.access_token) {
       await this.getDeviceList();
       await this.updateDevices();
@@ -63,146 +75,182 @@ class SmartEq extends utils.Adapter {
     }
   }
   async login() {
-    const [code_verifier, codeChallenge] = this.getCodeChallenge();
-    const resume = await this.requestClient({
-      method: "get",
-      url:
-        "https://id.mercedes-benz.com/as/authorization.oauth2?client_id=70d89501-938c-4bec-82d0-6abb550b0825&response_type=code&scope=openid+profile+email+phone+ciam-uid+offline_access&redirect_uri=https://oneapp.microservice.smart.com&code_challenge=" +
-        codeChallenge +
-        "&code_challenge_method=S256",
-      headers: {
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "de-de",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
-      },
-      jar: this.cookieJar,
-      withCredentials: true,
-    })
-      .then((res) => {
-        this.log.debug(JSON.stringify(res.data));
-        return qs.parse(res.request.path.split("?")[1]).resume;
+    if (!this.config.mfa) {
+      const [code_verifier, codeChallenge] = this.getCodeChallenge();
+      this.session.resume = await this.requestClient({
+        method: "get",
+        url:
+          "https://id.mercedes-benz.com/as/authorization.oauth2?client_id=70d89501-938c-4bec-82d0-6abb550b0825&response_type=code&scope=openid+profile+email+phone+ciam-uid+offline_access&redirect_uri=https://oneapp.microservice.smart.mercedes-benz.com&acr_values=mfa&code_challenge=" +
+          codeChallenge +
+          "&code_challenge_method=S256",
+        headers: {
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "de-de",
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+        },
+        jar: this.cookieJar,
+        withCredentials: true,
       })
-      .catch((error) => {
-        this.log.error(error);
-        if (error.response) {
-          this.log.error(JSON.stringify(error.response.data));
-        }
-      });
+        .then((res) => {
+          this.log.debug(JSON.stringify(res.data));
+          return qs.parse(res.request.path.split("?")[1]).resume;
+        })
+        .catch((error) => {
+          this.log.error(error);
+          if (error.response) {
+            this.log.error(JSON.stringify(error.response.data));
+          }
+        });
 
-    await this.requestClient({
-      method: "post",
-      url: "https://id.mercedes-benz.com/ciam/auth/login/user",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json, text/plain, */*",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
-        Referer: "https://id.mercedes-benz.com/ciam/auth/login",
-        "Accept-Language": "de-de",
-      },
-      jar: this.cookieJar,
-      withCredentials: true,
-      data: JSON.stringify({
-        username: this.config.username,
-      }),
-    })
-      .then((res) => {
-        this.log.debug(JSON.stringify(res.data));
-        this.session = res.data;
-        this.setState("info.connection", true, true);
+      await this.requestClient({
+        method: "post",
+        url: "https://id.mercedes-benz.com/ciam/auth/login/user",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+          Referer: "https://id.mercedes-benz.com/ciam/auth/login",
+          "Accept-Language": "de-de",
+        },
+        jar: this.cookieJar,
+        withCredentials: true,
+        data: JSON.stringify({
+          username: this.config.username,
+        }),
       })
-      .catch((error) => {
-        this.log.error(error);
-        if (error.response) {
-          this.log.error(JSON.stringify(error.response.data));
-        }
-      });
+        .then((res) => {
+          this.log.debug(JSON.stringify(res.data));
+          this.session = res.data;
+          this.setState("info.connection", true, true);
+        })
+        .catch((error) => {
+          this.log.error(error);
+          if (error.response) {
+            this.log.error(JSON.stringify(error.response.data));
+          }
+        });
 
-    const token = await this.requestClient({
-      method: "post",
-      url: "https://id.mercedes-benz.com/ciam/auth/login/pass",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json, text/plain, */*",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
-        Referer: "https://id.mercedes-benz.com/ciam/auth/login",
-        "Accept-Language": "de-de",
-      },
-      jar: this.cookieJar,
-      withCredentials: true,
-      data: JSON.stringify({
-        username: this.config.username,
-        password: this.config.password,
-        rememberMe: true,
-      }),
-    })
-      .then((res) => {
-        this.log.debug(JSON.stringify(res.data));
-        return res.data.token;
+      const token = await this.requestClient({
+        method: "post",
+        url: "https://id.mercedes-benz.com/ciam/auth/login/pass",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+          Referer: "https://id.mercedes-benz.com/ciam/auth/login",
+          "Accept-Language": "de-de",
+        },
+        jar: this.cookieJar,
+        withCredentials: true,
+        data: JSON.stringify({
+          username: this.config.username,
+          password: this.config.password,
+          rememberMe: true,
+        }),
       })
-      .catch((error) => {
-        this.log.error(error);
-        if (error.response) {
-          this.log.error(JSON.stringify(error.response.data));
-        }
-      });
-    if (!token) {
-      this.log.error("Login failed, token empty. Try to logout and login into the app again.");
-      return;
+        .then((res) => {
+          this.log.debug(JSON.stringify(res.data));
+          if (res.data.result === "GOTO_LOGIN_OTP") {
+            this.log.warn("Please enter the OTP code from the mail in the adapter settings and and save.");
+          }
+        })
+        .catch((error) => {
+          this.log.error(error);
+          if (error.response) {
+            this.log.error(JSON.stringify(error.response.data));
+          }
+        });
+    } else {
+      const token = await this.requestClient({
+        method: "post",
+        url: "https://id.mercedes-benz.com/ciam/auth/login/otp",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json, text/plain, */*",
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+          Referer: "https://id.mercedes-benz.com/ciam/auth/login",
+          "Accept-Language": "de-de",
+        },
+        jar: this.cookieJar,
+        withCredentials: true,
+        data: {
+          password: this.config.mfa,
+          rememberMe: true,
+          username: this.config.username,
+        },
+      })
+        .then((res) => {
+          this.log.debug(JSON.stringify(res.data));
+          return res.data.token;
+        })
+        .catch(async (error) => {
+          this.log.error(error);
+          if (error.response) {
+            this.log.error(JSON.stringify(error.response.data));
+          }
+          this.log.error("Failed to login via OTP. Please enter the OTP code from the mail in the adapter settings and and save.");
+          const adapterConfig = "system.adapter." + this.name + "." + this.instance;
+          const obj = await this.getForeignObjectAsync(adapterConfig);
+          if (obj.native && obj.native.otp) {
+            obj.native.otp = "";
+            this.setForeignObject(adapterConfig, obj);
+          }
+        });
+      const code = await this.requestClient({
+        method: "post",
+        url: "https://id.mercedes-benz.com" + this.session.resume,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json, text/plain, */*",
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+          Referer: "https://id.mercedes-benz.com/ciam/auth/login",
+          "Accept-Language": "de-de",
+        },
+        jar: this.cookieJar,
+        withCredentials: true,
+        data: "token=" + token,
+      })
+        .then((res) => {
+          this.log.debug(JSON.stringify(res.data));
+          return qs.parse(res.request.path.split("?")[1]).code;
+        })
+        .catch((error) => {
+          this.log.error(error);
+          if (error.response) {
+            this.log.error(JSON.stringify(error.response.data));
+          }
+        });
+
+      await this.requestClient({
+        method: "post",
+        url: "https://id.mercedes-benz.com/as/token.oauth2",
+        headers: {
+          Accept: "*/*",
+          "User-Agent": "sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0",
+          "Accept-Language": "de-de",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        jar: this.cookieJar,
+        withCredentials: true,
+        data:
+          "grant_type=authorization_code&code=" +
+          code +
+          "&code_verifier=" +
+          code_verifier +
+          "&redirect_uri=https://oneapp.microservice.smart.com&client_id=70d89501-938c-4bec-82d0-6abb550b0825",
+      })
+        .then((res) => {
+          this.log.debug(JSON.stringify(res.data));
+          this.session = res.data;
+          this.setState("info.connection", true, true);
+        })
+        .catch((error) => {
+          this.log.error(error);
+          if (error.response) {
+            this.log.error(JSON.stringify(error.response.data));
+          }
+        });
     }
-    const code = await this.requestClient({
-      method: "post",
-      url: "https://id.mercedes-benz.com" + resume,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json, text/plain, */*",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
-        Referer: "https://id.mercedes-benz.com/ciam/auth/login",
-        "Accept-Language": "de-de",
-      },
-      jar: this.cookieJar,
-      withCredentials: true,
-      data: "token=" + token,
-    })
-      .then((res) => {
-        this.log.debug(JSON.stringify(res.data));
-        return qs.parse(res.request.path.split("?")[1]).code;
-      })
-      .catch((error) => {
-        this.log.error(error);
-        if (error.response) {
-          this.log.error(JSON.stringify(error.response.data));
-        }
-      });
-
-    await this.requestClient({
-      method: "post",
-      url: "https://id.mercedes-benz.com/as/token.oauth2",
-      headers: {
-        Accept: "*/*",
-        "User-Agent": "sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0",
-        "Accept-Language": "de-de",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      jar: this.cookieJar,
-      withCredentials: true,
-      data:
-        "grant_type=authorization_code&code=" +
-        code +
-        "&code_verifier=" +
-        code_verifier +
-        "&redirect_uri=https://oneapp.microservice.smart.com&client_id=70d89501-938c-4bec-82d0-6abb550b0825",
-    })
-      .then((res) => {
-        this.log.debug(JSON.stringify(res.data));
-        this.session = res.data;
-        this.setState("info.connection", true, true);
-      })
-      .catch((error) => {
-        this.log.error(error);
-        if (error.response) {
-          this.log.error(JSON.stringify(error.response.data));
-        }
-      });
   }
   getCodeChallenge() {
     let hash = "";
@@ -370,6 +418,7 @@ class SmartEq extends utils.Adapter {
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
         this.session = res.data;
+        this.setState("auth.session", JSON.stringify(this.session), true);
         this.setState("info.connection", true, true);
       })
       .catch((error) => {
@@ -377,8 +426,13 @@ class SmartEq extends utils.Adapter {
         this.log.error(error);
         error.response && this.log.error(JSON.stringify(error.response.data));
         this.log.error("Start relogin in 1min");
-        this.reLoginTimeout = setTimeout(() => {
-          this.login();
+        this.reLoginTimeout = setTimeout(async () => {
+          const adapterConfig = "system.adapter." + this.name + "." + this.instance;
+          const obj = await this.getForeignObjectAsync(adapterConfig);
+          if (obj.native && obj.native.otp) {
+            obj.native.otp = "";
+            this.setForeignObject(adapterConfig, obj);
+          }
         }, 1000 * 60 * 1);
       });
   }

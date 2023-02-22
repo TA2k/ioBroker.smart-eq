@@ -81,10 +81,31 @@
   "native": {
     "username": "",
     "password": "",
+    "otp": "",
     "interval": 10
   },
   "objects": [],
   "instanceObjects": [
+    {
+      "_id": "auth",
+      "type": "channel",
+      "common": {
+        "name": "Auth Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "auth.session",
+      "type": "state",
+      "common": {
+        "role": "json",
+        "name": "Session state",
+        "type": "string",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
     {
       "_id": "info",
       "type": "channel",
