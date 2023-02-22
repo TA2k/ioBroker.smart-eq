@@ -249,7 +249,7 @@ class SmartEq extends utils.Adapter {
           code +
           "&code_verifier=" +
           this.session.code_verifier +
-          "&redirect_uri=https://oneapp.microservice.smart.mercedes-benz.com",
+          "&redirect_uri=https://oneapp.microservice.smart.mercedes-benz.com&client_id=70d89501-938c-4bec-82d0-6abb550b0825",
       })
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));
