@@ -442,6 +442,7 @@ class SmartEq extends utils.Adapter {
         this.log.error(error);
         error.response && this.log.error(JSON.stringify(error.response.data));
         this.log.error("Start relogin in 1min");
+        this.session = {};
         this.reLoginTimeout = setTimeout(async () => {
           const adapterConfig = "system.adapter." + this.name + "." + this.instance;
           const obj = await this.getForeignObjectAsync(adapterConfig);
