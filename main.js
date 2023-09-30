@@ -65,6 +65,7 @@ class SmartEq extends utils.Adapter {
 
     if (this.session.refresh_token) {
       this.log.info('Resume session from last login');
+      this.log.info('If this is failing, please delte auth folder under smart-eq objects');
       await this.refreshToken();
     } else {
       this.log.info('Login with username and password');
