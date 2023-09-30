@@ -16,12 +16,19 @@
       }
     ],
     "no-console": "off",
+    "no-unused-vars": [
+      "error",
+      {
+        "ignoreRestSiblings": true,
+        "argsIgnorePattern": "^_"
+      }
+    ],
     "no-var": "error",
     "no-trailing-spaces": "error",
     "prefer-const": "error",
     "quotes": [
       "error",
-      "double",
+      "single",
       {
         "avoidEscape": true,
         "allowTemplateLiterals": true
@@ -30,6 +37,6 @@
     "semi": ["error", "always"]
   },
   "parserOptions": {
-    "ecmaVersion": 2018
+    "ecmaVersion": 2020
   }
 }
