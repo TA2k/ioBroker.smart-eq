@@ -303,7 +303,7 @@ class SmartEq extends utils.Adapter {
     })
       .then(async (res) => {
         this.log.debug(JSON.stringify(res.data));
-        if (!res.data) {
+        if (!res.data || !res.data.licensePlates || res.data.licensePlates.length === 0) {
           this.log.warn('No vehicles found');
           return;
         }
@@ -448,7 +448,9 @@ class SmartEq extends utils.Adapter {
         'Accept-Language': 'de-de',
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      data: 'grant_type=refresh_token&client_id=70d89501-938c-4bec-82d0-6abb550b0825&refresh_token=', // + this.session.refresh_token,
+      data:
+        'grant_type=refresh_token&client_id=70d89501-938c-4bec-82d0-6abb550b0825&refresh_token=' +
+        this.session.refresh_token,
     })
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
