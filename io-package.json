@@ -88,7 +88,8 @@
     "username": "",
     "password": "",
     "otp": "",
-    "interval": 10
+    "interval": 10,
+    "type": "eq"
   },
   "objects": [],
   "instanceObjects": [

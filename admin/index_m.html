@@ -20,18 +20,18 @@
       function load(settings, onChange) {
         // example: select elements with id=key and class=value and insert value
         if (!settings) return;
-        $(".value").each(function () {
+        $('.value').each(function () {
           var $key = $(this);
-          var id = $key.attr("id");
-          if ($key.attr("type") === "checkbox") {
+          var id = $key.attr('id');
+          if ($key.attr('type') === 'checkbox') {
             // do not call onChange direct, because onChange could expect some arguments
-            $key.prop("checked", settings[id]).on("change", () => onChange());
+            $key.prop('checked', settings[id]).on('change', () => onChange());
           } else {
             // do not call onChange direct, because onChange could expect some arguments
             $key
               .val(settings[id])
-              .on("change", () => onChange())
-              .on("keyup", () => onChange());
+              .on('change', () => onChange())
+              .on('keyup', () => onChange());
           }
         });
         onChange(false);
@@ -43,14 +43,14 @@
       function save(callback) {
         // example: select elements with class=value and build settings object
         var obj = {};
-        $(".value").each(function () {
+        $('.value').each(function () {
           var $this = $(this);
-          if ($this.attr("type") === "checkbox") {
-            obj[$this.attr("id")] = $this.prop("checked");
-          } else if ($this.attr("type") === "number") {
-            obj[$this.attr("id")] = parseFloat($this.val());
+          if ($this.attr('type') === 'checkbox') {
+            obj[$this.attr('id')] = $this.prop('checked');
+          } else if ($this.attr('type') === 'number') {
+            obj[$this.attr('id')] = parseFloat($this.val());
           } else {
-            obj[$this.attr("id")] = $this.val();
+            obj[$this.attr('id')] = $this.val();
           }
         });
         callback(obj);
@@ -85,6 +85,15 @@
         <div class="input-field col col s3">
           <input class="value" id="otp" type="text" />
           <label for="otp" class="translate">OTP Code via Mail</label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col s2 input-field">
+          <select id="type" class="value">
+            <option value="eq">Smart EQ</option>
+            <option value="hello">Hello Smart</option>
+          </select>
+          <label for="type" class="translate">App Smart EQ or Hello Smart</label>
         </div>
       </div>
       <div class="row">

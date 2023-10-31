@@ -83,6 +83,230 @@ class SmartEq extends utils.Adapter {
       }, expires_in);
     }
   }
+  async loginHello() {
+    const loginResponse = await this.requestClient({
+      method: 'post',
+      url: 'https://accounts.eu1.gigya.com/accounts.login',
+      headers: {
+        connection: 'close',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      data: {
+        apiKey: '3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a',
+        format: 'json',
+        httpStatusCodes: 'true',
+        loginID: this.config.username,
+        nonce: Date.now(),
+        password: this.config.password,
+        sdk: 'Android_6.2.1',
+        targetEnv: 'mobile',
+      },
+    })
+      .then((res) => {
+        this.log.debug(JSON.stringify(res.data));
+        return res.data;
+      })
+      .catch((error) => {
+        this.log.error(error);
+        error.response && this.log.error(JSON.stringify(error.response.data));
+      });
+    if (!loginResponse) {
+      this.log.error('Login failed #1');
+      this.setState('info.connection', false, true);
+
+      return;
+    }
+    await this.requestClient({
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://api.ecloudeu.com/auth/account/session/secure?identity_type=smart',
+      headers: {
+        'x-app-id': 'SmartAPPEU',
+        accept: 'application/json;responseformat=3',
+        'x-agent-type': 'android',
+        'x-device-type': 'mobile',
+        'x-operator-code': 'SMART',
+        'x-device-identifier': '1e7b5fe4be4bd94d5f2a121b39a78f9c',
+        'x-env-type': 'production',
+        'x-version': 'smartNew',
+        'accept-language': 'en_US',
+        'x-api-signature-version': '1.0',
+        'x-api-signature-nonce': '824-af1d127401c2RATQHSL1698766452683',
+        'x-device-manufacture': 'HUAWEI',
+        'x-device-brand': 'ANE-LX1',
+        'x-device-model': 'ANE-LX1',
+        'x-device-release-date': '',
+        'x-agent-version': '9',
+        'content-type': 'application/json; charset=utf-8',
+        'user-agent': 'okhttp/4.11.0',
+        'x-signature': '8cMlKgyfcDs63mbrsQ533/WX9+k=',
+        'x-timestamp': '1698766452930',
+      },
+      data: {
+        accessToken: loginResponse.sessionInfo.login_token,
+      },
+    })
+      .then((res) => {
+        this.log.debug(JSON.stringify(res.data));
+        this.session = res.data.data;
+        this.setState('info.connection', true, true);
+      })
+      .catch((error) => {
+        this.log.error(error);
+        error.response && this.log.error(JSON.stringify(error.response.data));
+      });
+  }
+  creasteSignatureHello(nonce, params, timestamp, method, url) {
+    const payload = `application/json;responseformat=3
+x-api-signature-nonce:${nonce}
+x-api-signature-version:1.0
+
+${qs.stringify(params)}
+1B2M2Y8AsgTpgAmY7PhCfg==
+${timestamp}
+${method}
+${url}`;
+
+    const secret = Buffer.from('NzRlNzQ2OWFmZjUwNDJiYmJlZDdiYmIxYjM2YzE1ZTk=', 'base64');
+    const result = crypto.createHmac('sha1', secret).update(payload).digest('base64');
+    return result;
+  }
+  async getDeviceListHello() {
+    const timestamp = Date.now();
+    const nonce = '7aa-1bcab11ea07cA8XV8OS1698791589883';
+    const params = { needSharedCar: 1, userId: this.session.userId };
+    const method = 'GET';
+    const url = '/device-platform/user/vehicle/secure';
+    const sign = this.creasteSignatureHello(nonce, params, timestamp, method, url);
+    await this.requestClient({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://api.ecloudeu.com/' + url,
+      headers: {
+        'x-app-id': 'SmartAPPEU',
+        accept: 'application/json;responseformat=3',
+        'x-agent-type': 'android',
+        'x-device-type': 'mobile',
+        'x-operator-code': 'SMART',
+        'x-device-identifier': '1e7b5fe4be4bd94d5f2a121b39a78f9c',
+        'x-env-type': 'production',
+        'x-version': 'smartNew',
+        'accept-language': 'en_US',
+        'content-type': 'application/json; charset=utf-8',
+        'x-api-signature-version': '1.0',
+        'x-api-signature-nonce': nonce,
+        authorization: this.session.accessToken,
+        'x-client-id': 'UAWEI0000APP00ANELX123AV10090080',
+        'user-agent': 'okhttp/4.11.0',
+        'x-signature': sign,
+        'x-timestamp': timestamp,
+      },
+      params: params,
+    })
+      .then(async (res) => {
+        this.log.debug(JSON.stringify(res.data));
+        if (!res.data || !res.data.data || res.data.data.list === 0) {
+          this.log.warn('No vehicles found');
+          return;
+        }
+        for (const device of res.data.data.list) {
+          const vin = device.vin;
+          this.deviceArray.push(vin);
+          const name = device.modelName + ' ' + device.plateNo;
+
+          await this.setObjectNotExistsAsync(vin, {
+            type: 'device',
+            common: {
+              name: name,
+            },
+            native: {},
+          });
+          await this.setObjectNotExistsAsync(vin + '.remote', {
+            type: 'channel',
+            common: {
+              name: 'Remote Controls',
+            },
+            native: {},
+          });
+
+          const remoteArray = [{ command: 'precond', name: 'True = Start, False = Stop' }];
+          remoteArray.forEach((remote) => {
+            this.setObjectNotExists(vin + '.remote.' + remote.command, {
+              type: 'state',
+              common: {
+                name: remote.name || '',
+                type: remote.type || 'boolean',
+                role: remote.role || 'boolean',
+                write: true,
+                read: true,
+              },
+              native: {},
+            });
+          });
+        }
+      })
+      .catch((error) => {
+        this.log.error('Failed to get vehicles ');
+        this.log.error(error);
+        error.response && this.log.error(JSON.stringify(error.response.data));
+      });
+  }
+  async updateDevicesHello() {
+    for (const vin of this.deviceArray) {
+      const timestamp = Date.now();
+      const nonce = '7aa-1bcab11ea07cA8XV8OS1698791589883';
+      const params = { latest: true, target: '', userId: this.session.userId };
+      const method = 'GET';
+      const url = '/remote-control/vehicle/status/' + vin;
+      const sign = this.creasteSignatureHello(nonce, params, timestamp, method, url);
+      await this.requestClient({
+        method: 'get',
+        maxBodyLength: Infinity,
+        url: 'https://api.ecloudeu.com/' + url,
+        headers: {
+          'x-app-id': 'SmartAPPEU',
+          accept: 'application/json;responseformat=3',
+          'x-agent-type': 'android',
+          'x-device-type': 'mobile',
+          'x-operator-code': 'SMART',
+          'x-device-identifier': '1e7b5fe4be4bd94d5f2a121b39a78f9c',
+          'x-env-type': 'production',
+          'x-version': 'smartNew',
+          'accept-language': 'en_US',
+          'content-type': 'application/json; charset=utf-8',
+          'x-api-signature-version': '1.0',
+          'x-api-signature-nonce': nonce,
+          authorization: this.session.accessToken,
+          'x-client-id': 'UAWEI0000APP00ANELX123AV10090080',
+          'user-agent': 'okhttp/4.11.0',
+          'x-signature': sign,
+          'x-timestamp': timestamp,
+        },
+        params: params,
+      })
+        .then(async (res) => {
+          this.log.debug(JSON.stringify(res.data));
+          if (!res.data || !res.data.data) {
+            return;
+          }
+          const data = res.data.data;
+
+          const forceIndex = null;
+          const preferedArrayName = null;
+
+          this.json2iob.parse(vin + '.status', data, {
+            forceIndex: forceIndex,
+            preferedArrayName: preferedArrayName,
+          });
+        })
+        .catch((error) => {
+          this.log.error('Failed to get vehicles ');
+          this.log.error(error);
+          error.response && this.log.error(JSON.stringify(error.response.data));
+        });
+    }
+  }
+
   async login() {
     if (!this.config.otp) {
       const [code_verifier, codeChallenge] = this.getCodeChallenge();
