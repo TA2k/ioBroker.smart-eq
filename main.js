@@ -58,9 +58,19 @@ class SmartEq extends utils.Adapter {
     this.subscribeStates('*');
 
     if (this.config.type === 'hello') {
+      this.deviceId = crypto.randomBytes(16).toString('hex');
       await this.loginHello();
-      await this.getDeviceListHello();
-      await this.updateDevicesHello();
+
+      if (this.session.access_token) {
+        await this.getDeviceListHello();
+        await this.updateDevicesHello();
+        this.updateInterval = setInterval(async () => {
+          await this.updateDevicesHello();
+        }, this.config.interval * 60 * 1000);
+        this.refreshTokenInterval = setInterval(() => {
+          this.loginHello();
+        }, 24 * 60 * 60 * 1000);
+      }
       return;
     }
     const sessionState = await this.getStateAsync('auth.session');
@@ -91,6 +101,7 @@ class SmartEq extends utils.Adapter {
     }
   }
   async loginHello() {
+    this.log.info('Login into Hello Smart');
     const context = await this.requestClient({
       method: 'get',
       url: 'https://awsapi.future.smart.com/login-app/api/v1/authorize?uiLocales=de-DE&uiLocales=de-DE',
@@ -225,7 +236,7 @@ class SmartEq extends utils.Adapter {
         'x-agent-type': 'android',
         'x-device-type': 'mobile',
         'x-operator-code': 'SMART',
-        'x-device-identifier': '1e7b5fe4be4bd94d5f2a121b39a78f9c',
+        'x-device-identifier': this.deviceId,
         'x-env-type': 'production',
         'x-version': 'smartNew',
         'accept-language': 'en_US',
@@ -289,7 +300,7 @@ ${url}`;
         'x-agent-type': 'android',
         'x-device-type': 'mobile',
         'x-operator-code': 'SMART',
-        'x-device-identifier': '1e7b5fe4be4bd94d5f2a121b39a78f9c',
+        'x-device-identifier': this.deviceId,
         'x-env-type': 'production',
         'x-version': 'smartNew',
         'accept-language': 'en_US',
@@ -331,7 +342,11 @@ ${url}`;
           });
 
           const remoteArray = [
-            { command: 'precond', name: 'True = Start, False = Stop', command: 'refresh', name: 'True = Refresh' },
+            { command: 'conditioner', name: 'True = Start, False = Stop' },
+            { command: 'lock', name: 'True = Lock, False = Unlock' },
+            { command: 'seatheat', name: 'True = On, False = Off' },
+            { command: 'charging', name: 'True = On, False = Off' },
+            { command: 'refresh', name: 'True = Refresh' },
           ];
           remoteArray.forEach((remote) => {
             this.setObjectNotExists(vin + '.remote.' + remote.command, {
@@ -372,7 +387,7 @@ ${url}`;
           'x-agent-type': 'android',
           'x-device-type': 'mobile',
           'x-operator-code': 'SMART',
-          'x-device-identifier': '1e7b5fe4be4bd94d5f2a121b39a78f9c',
+          'x-device-identifier': this.deviceId,
           'x-env-type': 'production',
           'x-version': 'smartNew',
           'accept-language': 'en_US',
@@ -844,48 +859,195 @@ ${url}`;
         const command = id.split('.')[4];
         let value;
         let data;
-        if (command === 'precond') {
-          value = state.val ? 'start' : 'stop';
-          data = {
-            type: 'immediate',
-          };
-        }
-        const url =
-          'https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/' +
-          deviceId +
-          '/' +
-          command +
-          '/' +
-          value;
-        this.log.debug(JSON.stringify(data));
-        this.log.debug(url);
-        await this.requestClient({
-          method: 'post',
-          url: url,
-          headers: {
-            'content-type': 'application/json',
-            accept: '*/*',
-            authorization: 'Bearer ' + this.session.access_token,
-            'x-applicationname': '70d89501-938c-4bec-82d0-6abb550b0825',
-            'accept-language': 'de-DE;q=1.0',
-            'user-agent': this.userAgent,
-            guid: '280C6B55-F179-4428-88B6-6F824694BF1B',
-          },
-          data: data,
-        })
-          .then((res) => {
-            this.log.info(JSON.stringify(res.data));
-            return res.data;
+
+        if (this.config.type === 'hello') {
+          if (command === 'refresh') {
+            await this.updateDevicesHello();
+            return;
+          }
+          let payload = {};
+          if (command === 'conditioner') {
+            payload = {
+              command: state.val ? 'start' : 'stop',
+              creator: 'tc',
+              operationScheduling: {
+                duration: 180,
+                interval: 0,
+                occurs: 1,
+                recurrentOperation: false,
+              },
+              serviceId: 'RCE_2',
+              serviceParameters: [
+                {
+                  key: 'rce.conditioner',
+                  value: '1',
+                },
+                {
+                  key: 'rce.temp',
+                  value: '20.0',
+                },
+              ],
+              timestamp: Date.now(),
+            };
+          }
+          if (command === 'charging') {
+            payload = {
+              command: 'start',
+              creator: 'tc',
+              operationScheduling: {
+                duration: 0,
+                interval: 0,
+                occurs: 1,
+                recurrentOperation: false,
+              },
+              serviceId: 'RCS',
+              serviceParameters: [
+                {
+                  key: 'operation',
+                  value: '1',
+                },
+                {
+                  key: state.val ? 'rcs.restart' : 'rcs.terminate',
+                  value: '1',
+                },
+              ],
+              timestamp: Date.now(),
+            };
+          }
+          if (command === 'seatheat') {
+            payload = {
+              command: state.val ? 'start' : 'stop',
+              creator: 'tc',
+              operationScheduling: {
+                duration: 0,
+                interval: 0,
+                occurs: 1,
+                recurrentOperation: false,
+              },
+              serviceId: 'RCE_2',
+              serviceParameters: [
+                {
+                  key: 'rce.heat',
+                  value: 'front-left',
+                },
+                {
+                  key: 'rce.level',
+                  value: '3',
+                },
+              ],
+              timestamp: Date.now(),
+            };
+          }
+          if (command === 'lock') {
+            payload = {
+              command: 'start',
+              creator: 'tc',
+              operationScheduling: {
+                duration: 0,
+                interval: 0,
+                occurs: 1,
+                recurrentOperation: false,
+              },
+              serviceId: state.val ? 'RDL_2' : 'RDU_2',
+              serviceParameters: [
+                {
+                  key: 'door',
+                  value: 'all',
+                },
+              ],
+              timestamp: Date.now(),
+            };
+          }
+          this.log.debug(JSON.stringify(payload));
+          const timestamp = Date.now();
+          const nonce = crypto.randomBytes(16).toString('hex');
+          const params = {};
+          const method = 'PUT';
+          const url = '/remote-control/vehicle/telematics/' + deviceId;
+
+          const sign = this.creasteSignatureHello(nonce, params, timestamp, method, url, payload);
+          await this.requestClient({
+            method: 'put',
+            url: 'https://api.ecloudeu.com' + url,
+            headers: {
+              'x-app-id': 'SmartAPPEU',
+              accept: 'application/json;responseformat=3',
+              'x-agent-type': 'android',
+              'x-device-type': 'mobile',
+              'x-operator-code': 'SMART',
+              'x-device-identifier': this.deviceId,
+              'x-env-type': 'production',
+              'x-version': 'smartNew',
+              'accept-language': 'en_US',
+              'x-api-signature-version': '1.0',
+              'x-api-signature-nonce': nonce,
+              authorization: this.session.accessToken,
+              'x-client-id': 'UAWEI0000APP00ANELX123AV10090080',
+              'x-vehicle-identifier': deviceId,
+              'content-type': 'application/json; charset=UTF-8',
+              'user-agent': 'okhttp/4.11.0',
+              'x-signature': sign,
+              'x-timestamp': timestamp,
+            },
+            data: payload,
           })
-          .catch((error) => {
-            this.log.error(error);
-            if (error.response) {
-              this.log.error(JSON.stringify(error.response.data));
-            }
-          });
+            .then((res) => {
+              this.log.info(JSON.stringify(res.data));
+            })
+            .catch((error) => {
+              this.log.error(error);
+              if (error.response) {
+                this.log.error(JSON.stringify(error.response.data));
+              }
+            });
+        } else {
+          if (command === 'precond') {
+            value = state.val ? 'start' : 'stop';
+            data = {
+              type: 'immediate',
+            };
+          }
+          const url =
+            'https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/' +
+            deviceId +
+            '/' +
+            command +
+            '/' +
+            value;
+          this.log.debug(JSON.stringify(data));
+          this.log.debug(url);
+          await this.requestClient({
+            method: 'post',
+            url: url,
+            headers: {
+              'content-type': 'application/json',
+              accept: '*/*',
+              authorization: 'Bearer ' + this.session.access_token,
+              'x-applicationname': '70d89501-938c-4bec-82d0-6abb550b0825',
+              'accept-language': 'de-DE;q=1.0',
+              'user-agent': this.userAgent,
+              guid: '280C6B55-F179-4428-88B6-6F824694BF1B',
+            },
+            data: data,
+          })
+            .then((res) => {
+              this.log.info(JSON.stringify(res.data));
+              return res.data;
+            })
+            .catch((error) => {
+              this.log.error(error);
+              if (error.response) {
+                this.log.error(JSON.stringify(error.response.data));
+              }
+            });
+        }
         this.refreshTimeout && clearTimeout(this.refreshTimeout);
         this.refreshTimeout = setTimeout(async () => {
-          await this.updateDevices();
+          if (this.config.type === 'hello') {
+            await this.updateDevicesHello();
+          } else {
+            await this.updateDevices();
+          }
         }, 10 * 1000);
       } else {
         // const resultDict = { chargingStatus: "precond" };
