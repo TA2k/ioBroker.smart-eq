@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smart-eq",
-    "version": "0.0.6",
+    "version": "0.1.0",
     "news": {
+      "0.1.0": {
+        "en": "Add Hello Smart Support",
+        "de": "Hello Smart Unterstützung hinzufügen"
+      },
       "0.0.6": {
         "en": "fix login"
       },
@@ -25,10 +29,10 @@
         "zh-cn": "首次出版"
       }
     },
-    "title": "Smart EQ",
+    "title": "Smart EQ / Hello Smart",
     "titleLang": {
-      "en": "Smart EQ",
-      "de": "Smart EQ",
+      "en": "Smart EQ / Hello Smart",
+      "de": "Smart EQ / Hello Smart",
       "ru": "Умный эквалайзер",
       "pt": "EQ inteligente",
       "nl": "Slimme EQ",
@@ -39,8 +43,8 @@
       "zh-cn": "智能均衡器"
     },
     "desc": {
-      "en": "Adapter for Smart EQ",
-      "de": "Adapter für Smart EQ",
+      "en": "Adapter for Smart EQ and Hello Smart",
+      "de": "Adapter für Smart EQ und Hello Smart",
       "ru": "Адаптер для Smart EQ",
       "pt": "Adaptador para Smart EQ",
       "nl": "Adapter voor slimme EQ",
@@ -51,7 +55,7 @@
       "zh-cn": "智能均衡器适配器"
     },
     "authors": ["TA2k <tombox2020@gmail.com>"],
-    "keywords": ["smart", "smart eq"],
+    "keywords": ["smart", "smart eq", "hello smart"],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",

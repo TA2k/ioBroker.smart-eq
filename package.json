@@ -1,6 +1,6 @@
 {
   "name": "iobroker.smart-eq",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "Adapter for Smart EQ",
   "author": {
     "name": "TA2k",
@@ -15,7 +15,8 @@
   "license": "MIT",
   "keywords": [
     "smart",
-    "smart eq"
+    "smart eq",
+    "hello smart"
   ],
   "repository": {
     "type": "git",
