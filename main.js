@@ -10,7 +10,7 @@ const utils = require('@iobroker/adapter-core');
 const axios = require('axios').default;
 const qs = require('qs');
 const crypto = require('crypto');
-const Json2iob = require('./lib/json2iob');
+const Json2iob = require('json2iob');
 const { wrapper } = require('axios-cookiejar-support');
 const tough = require('tough-cookie');
 
@@ -44,6 +44,7 @@ class SmartEq extends utils.Adapter {
       this.log.info('Set interval to minimum 0.5');
       this.config.interval = 0.5;
     }
+
     this.cookieJar = new tough.CookieJar();
     const cookies = await this.getStateAsync('auth.cookies');
     if (cookies && cookies.val) {
@@ -56,6 +57,12 @@ class SmartEq extends utils.Adapter {
     this.refreshTokenTimeout = null;
     this.subscribeStates('*');
 
+    if (this.config.type === 'hello') {
+      await this.loginHello();
+      await this.getDeviceListHello();
+      await this.updateDevicesHello();
+      return;
+    }
     const sessionState = await this.getStateAsync('auth.session');
 
     if (sessionState && sessionState.val) {
@@ -84,22 +91,63 @@ class SmartEq extends utils.Adapter {
     }
   }
   async loginHello() {
+    const context = await this.requestClient({
+      method: 'get',
+      url: 'https://awsapi.future.smart.com/login-app/api/v1/authorize?uiLocales=de-DE&uiLocales=de-DE',
+      headers: {
+        'upgrade-insecure-requests': '1',
+        'user-agent':
+          'Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36',
+        accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'x-requested-with': 'com.smart.hellosmart',
+        'sec-fetch-site': 'none',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-user': '?1',
+        'sec-fetch-dest': 'document',
+        'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6',
+      },
+    }).then((res) => {
+      this.log.debug(JSON.stringify(res.data));
+      return qs.parse(res.request.path.split('?')[1]);
+    });
+
     const loginResponse = await this.requestClient({
       method: 'post',
-      url: 'https://accounts.eu1.gigya.com/accounts.login',
+      maxBodyLength: Infinity,
+      url: 'https://auth.smart.com/accounts.login',
       headers: {
-        connection: 'close',
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'user-agent':
+          'Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36',
+        'content-type': 'application/x-www-form-urlencoded',
+        accept: '*/*',
+        origin: 'https://app.id.smart.com',
+        'x-requested-with': 'com.smart.hellosmart',
+        'sec-fetch-site': 'same-site',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-dest': 'empty',
+        'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6',
+        cookie:
+          'gmid=gmid.ver4.AcbHPqUK5Q.xOaWPhRTb7gy-6-GUW6cxQVf_t7LhbmeabBNXqqqsT6dpLJLOWCGWZM07EkmfM4j.u2AMsCQ9ZsKc6ugOIoVwCgryB2KJNCnbBrlY6pq0W2Ww7sxSkUa9_WTPBIwAufhCQYkb7gA2eUbb6EIZjrl5mQ.sc3; ucid=hPzasmkDyTeHN0DinLRGvw; hasGmid=ver4; gig_bootstrap_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=auth_ver4',
       },
       data: {
-        apiKey: '3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a',
-        format: 'json',
-        httpStatusCodes: 'true',
         loginID: this.config.username,
-        nonce: Date.now(),
         password: this.config.password,
-        sdk: 'Android_6.2.1',
-        targetEnv: 'mobile',
+        sessionExpiration: '2592000',
+        targetEnv: 'jssdk',
+        include: 'profile,data,emails,subscriptions,preferences,',
+        includeUserInfo: 'true',
+        loginMode: 'standard',
+        lang: 'de',
+        riskContext:
+          '{"b0":41187,"b1":[0,2,3,1],"b2":4,"b3":["-23|0.383","-81.33333587646484|0.236"],"b4":3,"b5":1,"b6":"Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36","b7":[],"b8":"16:33:26","b9":-60,"b10":null,"b11":false,"b12":{"charging":true,"chargingTime":null,"dischargingTime":null,"level":0.58},"b13":[5,"360|760|24",false,true]}',
+        APIKey: '3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a',
+        source: 'showScreenSet',
+        sdk: 'js_latest',
+        authMode: 'cookie',
+        pageURL: 'https://app.id.smart.com/login?gig_ui_locales=de-DE',
+        sdkBuild: '15482',
+        format: 'json',
       },
     })
       .then((res) => {
@@ -116,10 +164,61 @@ class SmartEq extends utils.Adapter {
 
       return;
     }
+
+    const tokens = await this.requestClient({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url:
+        'https://auth.smart.com/oidc/op/v1.0/3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a/authorize/continue?context=' +
+        context.context +
+        '&login_token=' +
+        loginResponse.sessionInfo.login_token,
+      headers: {
+        'upgrade-insecure-requests': '1',
+        'user-agent':
+          'Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36',
+        accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'x-requested-with': 'com.smart.hellosmart',
+        'sec-fetch-site': 'same-site',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+        'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6',
+        cookie:
+          'gmid=gmid.ver4.AcbHPqUK5Q.xOaWPhRTb7gy-6-GUW6cxQVf_t7LhbmeabBNXqqqsT6dpLJLOWCGWZM07EkmfM4j.u2AMsCQ9ZsKc6ugOIoVwCgryB2KJNCnbBrlY6pq0W2Ww7sxSkUa9_WTPBIwAufhCQYkb7gA2eUbb6EIZjrl5mQ.sc3; ucid=hPzasmkDyTeHN0DinLRGvw; hasGmid=ver4; gig_bootstrap_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=auth_ver4; glt_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=' +
+          loginResponse.sessionInfo.login_token,
+      },
+    })
+      .then((res) => {
+        this.log.debug(res.request.path);
+        const tokens = qs.parse(res.request.path.split('?')[1]);
+        if (!tokens.access_token) {
+          this.log.error('Login failed #2');
+          this.setState('info.connection', false, true);
+          this.log.error(res.request.path);
+          return;
+        }
+        this.log.debug(JSON.stringify(res.data));
+
+        return tokens;
+      })
+      .catch((error) => {
+        this.log.error(error);
+        error.response && this.log.error(JSON.stringify(error.response.data));
+      });
+    const timestamp = Date.now();
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const params = { identity_type: 'smart' };
+    const method = 'POST';
+    const url = '/auth/account/session/secure';
+    const data = {
+      accessToken: tokens.access_token,
+    };
+    const sign = this.creasteSignatureHello(nonce, params, timestamp, method, url, data);
     await this.requestClient({
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://api.ecloudeu.com/auth/account/session/secure?identity_type=smart',
+      url: 'https://api.ecloudeu.com/auth/account/session/secure',
       headers: {
         'x-app-id': 'SmartAPPEU',
         accept: 'application/json;responseformat=3',
@@ -131,7 +230,7 @@ class SmartEq extends utils.Adapter {
         'x-version': 'smartNew',
         'accept-language': 'en_US',
         'x-api-signature-version': '1.0',
-        'x-api-signature-nonce': '824-af1d127401c2RATQHSL1698766452683',
+        'x-api-signature-nonce': nonce,
         'x-device-manufacture': 'HUAWEI',
         'x-device-brand': 'ANE-LX1',
         'x-device-model': 'ANE-LX1',
@@ -139,12 +238,11 @@ class SmartEq extends utils.Adapter {
         'x-agent-version': '9',
         'content-type': 'application/json; charset=utf-8',
         'user-agent': 'okhttp/4.11.0',
-        'x-signature': '8cMlKgyfcDs63mbrsQ533/WX9+k=',
-        'x-timestamp': '1698766452930',
+        'x-signature': sign,
+        'x-timestamp': timestamp,
       },
-      data: {
-        accessToken: loginResponse.sessionInfo.login_token,
-      },
+      data: data,
+      params: params,
     })
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
@@ -156,13 +254,16 @@ class SmartEq extends utils.Adapter {
         error.response && this.log.error(JSON.stringify(error.response.data));
       });
   }
-  creasteSignatureHello(nonce, params, timestamp, method, url) {
+  creasteSignatureHello(nonce, params, timestamp, method, url, post) {
+    const md5 = post
+      ? crypto.createHash('md5').update(JSON.stringify(post)).digest('base64')
+      : '1B2M2Y8AsgTpgAmY7PhCfg==';
     const payload = `application/json;responseformat=3
 x-api-signature-nonce:${nonce}
 x-api-signature-version:1.0
 
 ${qs.stringify(params)}
-1B2M2Y8AsgTpgAmY7PhCfg==
+${md5}
 ${timestamp}
 ${method}
 ${url}`;
@@ -173,7 +274,7 @@ ${url}`;
   }
   async getDeviceListHello() {
     const timestamp = Date.now();
-    const nonce = '7aa-1bcab11ea07cA8XV8OS1698791589883';
+    const nonce = crypto.randomBytes(16).toString('hex');
     const params = { needSharedCar: 1, userId: this.session.userId };
     const method = 'GET';
     const url = '/device-platform/user/vehicle/secure';
@@ -181,7 +282,7 @@ ${url}`;
     await this.requestClient({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api.ecloudeu.com/' + url,
+      url: 'https://api.ecloudeu.com' + url,
       headers: {
         'x-app-id': 'SmartAPPEU',
         accept: 'application/json;responseformat=3',
@@ -229,7 +330,9 @@ ${url}`;
             native: {},
           });
 
-          const remoteArray = [{ command: 'precond', name: 'True = Start, False = Stop' }];
+          const remoteArray = [
+            { command: 'precond', name: 'True = Start, False = Stop', command: 'refresh', name: 'True = Refresh' },
+          ];
           remoteArray.forEach((remote) => {
             this.setObjectNotExists(vin + '.remote.' + remote.command, {
               type: 'state',
@@ -254,7 +357,7 @@ ${url}`;
   async updateDevicesHello() {
     for (const vin of this.deviceArray) {
       const timestamp = Date.now();
-      const nonce = '7aa-1bcab11ea07cA8XV8OS1698791589883';
+      const nonce = crypto.randomBytes(16).toString('hex');
       const params = { latest: true, target: '', userId: this.session.userId };
       const method = 'GET';
       const url = '/remote-control/vehicle/status/' + vin;
@@ -262,7 +365,7 @@ ${url}`;
       await this.requestClient({
         method: 'get',
         maxBodyLength: Infinity,
-        url: 'https://api.ecloudeu.com/' + url,
+        url: 'https://api.ecloudeu.com' + url,
         headers: {
           'x-app-id': 'SmartAPPEU',
           accept: 'application/json;responseformat=3',
@@ -286,10 +389,10 @@ ${url}`;
       })
         .then(async (res) => {
           this.log.debug(JSON.stringify(res.data));
-          if (!res.data || !res.data.data) {
+          if (!res.data || !res.data.data || !res.data.data.vehicleStatus) {
             return;
           }
-          const data = res.data.data;
+          const data = res.data.data.vehicleStatus;
 
           const forceIndex = null;
           const preferedArrayName = null;
@@ -297,6 +400,7 @@ ${url}`;
           this.json2iob.parse(vin + '.status', data, {
             forceIndex: forceIndex,
             preferedArrayName: preferedArrayName,
+            channelName: 'Status',
           });
         })
         .catch((error) => {
