@@ -176,6 +176,12 @@ class SmartEq extends utils.Adapter {
       return;
     }
 
+    if (!loginResponse.sessionInfo) {
+      this.log.error('Login failed no session found');
+      this.setState('info.connection', false, true);
+      this.log.error(JSON.stringify(loginResponse));
+      return;
+    }
     this.gtokens = await this.requestClient({
       method: 'get',
       maxBodyLength: Infinity,
