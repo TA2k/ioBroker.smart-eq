@@ -278,7 +278,9 @@ class SmartEq extends utils.Adapter {
   }
 
   creasteSignatureHello(nonce, params, timestamp, method, url, post) {
-    const md5 = post ? crypto.createHash('md5').update(JSON.stringify(post)).digest('base64') : '1B2M2Y8AsgTpgAmY7PhCfg==';
+    const md5 = post
+      ? crypto.createHash('md5').update(JSON.stringify(post)).digest('base64')
+      : '1B2M2Y8AsgTpgAmY7PhCfg==';
     const payload = `application/json;responseformat=3
 x-api-signature-nonce:${nonce}
 x-api-signature-version:1.0
@@ -455,7 +457,8 @@ ${url}`;
         headers: {
           Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'de-de',
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+          'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
         },
         jar: this.cookieJar,
         withCredentials: true,
@@ -477,7 +480,8 @@ ${url}`;
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json, text/plain, */*',
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+          'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
@@ -503,7 +507,8 @@ ${url}`;
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json, text/plain, */*',
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+          'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
@@ -559,7 +564,9 @@ ${url}`;
           if (error.response) {
             this.log.error(JSON.stringify(error.response.data));
           }
-          this.log.error('Failed to login via OTP. Please enter the OTP code from the mail in the adapter settings and and save.');
+          this.log.error(
+            'Failed to login via OTP. Please enter the OTP code from the mail in the adapter settings and and save.',
+          );
           const adapterConfig = 'system.adapter.' + this.name + '.' + this.instance;
           const obj = await this.getForeignObjectAsync(adapterConfig);
           if (obj.native && obj.native.otp) {
@@ -577,7 +584,8 @@ ${url}`;
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           Accept: 'application/json, text/plain, */*',
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+          'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
@@ -1032,7 +1040,13 @@ ${url}`;
               type: 'immediate',
             };
           }
-          const url = 'https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/' + deviceId + '/' + command + '/' + value;
+          const url =
+            'https://oneapp.microservice.smart.mercedes-benz.com/seqc/v0/vehicles/' +
+            deviceId +
+            '/' +
+            command +
+            '/' +
+            value;
           this.log.debug(JSON.stringify(data));
           this.log.debug(url);
           await this.requestClient({
@@ -1069,6 +1083,12 @@ ${url}`;
           }
         }, 10 * 1000);
       } else {
+        if (id.indexOf('.position.latitude') !== -1 || id.indexOf('.position.longitude') !== -1) {
+          if (state.val) {
+            await this.setStateAsync(id, Number(state.val) / 3600000.0, true);
+          }
+        }
+
         // const resultDict = { chargingStatus: "precond" };
         // const idArray = id.split(".");
         // const stateName = idArray[idArray.length - 1];
