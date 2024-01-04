@@ -1083,9 +1083,20 @@ ${url}`;
           }
         }, 10 * 1000);
       } else {
-        if (id.indexOf('.position.latitude') !== -1 || id.indexOf('.position.longitude') !== -1) {
+        if (id.endsWith('.position.latitude') || id.endsWith('.position.longitude')) {
           if (state.val) {
-            await this.setStateAsync(id, Number(state.val) / 3600000.0, true);
+            await this.setObjectNotExistsAsync(id + 'Conv', {
+              type: 'state',
+              common: {
+                name: 'Converted',
+                type: 'number',
+                role: 'value.gps',
+                read: true,
+                write: false,
+              },
+              native: {},
+            });
+            await this.setStateAsync(id + 'Conv', Number(state.val) / 3600000.0, true);
           }
         }
 
