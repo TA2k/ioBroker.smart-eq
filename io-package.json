@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smart-eq",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
+      "0.1.1": {
+        "en": "Bugfixes",
+        "de": "Fehlerbehebungen"
+      },
       "0.1.0": {
         "en": "Add Hello Smart Support",
         "de": "Hello Smart Unterstützung hinzufügen"
@@ -72,7 +76,7 @@
     "materialize": true,
     "plugins": {
       "sentry": {
-        "dsn": "https://c9bd6c851b1246da95e6e982aa9b88f3@sentry.iobroker.net/152"
+        "dsn": "https://802f699c7aa84a62b0bcb54b31485352@sentry.iobroker.net/226"
       }
     },
     "dependencies": [

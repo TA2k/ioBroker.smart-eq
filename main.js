@@ -267,7 +267,9 @@ class SmartEq extends utils.Adapter {
     })
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
-        this.session = res.data.data;
+        if (res.data.data) {
+          this.session = res.data.data;
+        }
         this.setState('info.connection', true, true);
       })
       .catch((error) => {
@@ -628,9 +630,11 @@ ${url}`;
       })
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));
-          this.session = res.data;
-          this.setState('auth.session', JSON.stringify(this.session), true);
-          this.setState('info.connection', true, true);
+          if (res.data) {
+            this.session = res.data;
+            this.setState('auth.session', JSON.stringify(this.session), true);
+            this.setState('info.connection', true, true);
+          }
         })
         .catch((error) => {
           this.log.error(error);
@@ -820,9 +824,11 @@ ${url}`;
     })
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
-        this.session = res.data;
-        this.setState('auth.session', JSON.stringify(this.session), true);
-        this.setState('info.connection', true, true);
+        if (res.data) {
+          this.session = res.data;
+          this.setState('auth.session', JSON.stringify(this.session), true);
+          this.setState('info.connection', true, true);
+        }
       })
       .catch((error) => {
         this.log.error('refresh token failed');
