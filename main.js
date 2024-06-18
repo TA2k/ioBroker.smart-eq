@@ -503,7 +503,7 @@ ${url}`;
           }
         });
 
-      const token = await this.requestClient({
+      await this.requestClient({
         method: 'post',
         url: 'https://id.mercedes-benz.com/ciam/auth/login/pass',
         headers: {
