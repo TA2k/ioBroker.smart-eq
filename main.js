@@ -30,6 +30,10 @@ class SmartEq extends utils.Adapter {
     this.json2iob = new Json2iob(this);
     this.ignoreState = [];
     this.session = {};
+    this.loginRetryTimeout = null;
+    this.loginRetryDelay = 30 * 1000;   // Startwert für Retry in ms
+    this.loginMaxRetryDelay = 32 * 60 * 1000 // Maximalwert für Retry in ms
+    this.loginInProgress = false;
     this.userAgent =
       'Device: iPhone 8 Plus; OS-version: iOS_16.7; App-Name: smart EQ control; App-Version: 4.1.0; Build: 202305260959; Language: de_DE';
   }
@@ -59,7 +63,8 @@ class SmartEq extends utils.Adapter {
 
     if (this.config.type === 'hello') {
       this.deviceId = crypto.randomBytes(16).toString('hex');
-      await this.loginHello();
+      await this.loginHelloWithRetry();
+
 
       if (this.session.accessToken) {
         await this.getDeviceListHello();
@@ -100,6 +105,41 @@ class SmartEq extends utils.Adapter {
       }, expires_in);
     }
   }
+
+  async loginHelloWithRetry() {
+    if (this.loginInProgress) {
+        this.log.debug('Login already in progress, skipping retry');
+        return;
+    }
+
+    this.loginInProgress = true;
+
+    try {
+        await this.loginHello();
+
+        if (this.session && this.session.accessToken) {
+            this.log.info('Hello Smart login successful, resetting retry delay');
+            this.loginRetryDelay = 30 * 1000;
+            this.loginInProgress = false;
+            return;
+        }
+
+        throw new Error('Login did not yield access token');
+    } catch (e) {
+        this.log.warn(
+            'Hello Smart login failed, retrying in ' + Math.round(this.loginRetryDelay / 1000) + ' seconds',
+        );
+    }
+
+    this.loginInProgress = false;
+
+    this.loginRetryTimeout = setTimeout(() => {
+        this.loginHelloWithRetry();
+    }, this.loginRetryDelay);
+
+    this.loginRetryDelay = Math.min(this.loginRetryDelay * 2, this.loginMaxRetryDelay);
+}
+
   async loginHello() {
     this.log.info('Login into Hello Smart');
     const context = await this.requestClient({
@@ -860,6 +900,7 @@ ${url}`;
       this.refreshTimeout && clearTimeout(this.refreshTimeout);
       this.reLoginTimeout && clearTimeout(this.reLoginTimeout);
       this.refreshTokenTimeout && clearTimeout(this.refreshTokenTimeout);
+      this.loginRetryTimeout && clearTimeout(this.loginRetryTimeout);
       this.updateInterval && clearInterval(this.updateInterval);
       this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
       callback();
