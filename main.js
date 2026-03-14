@@ -11,7 +11,7 @@ const axios = require('axios').default;
 const qs = require('qs');
 const crypto = require('crypto');
 const Json2iob = require('json2iob');
-const { wrapper } = require('axios-cookiejar-support');
+const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const tough = require('tough-cookie');
 
 class SmartEq extends utils.Adapter {
@@ -32,7 +32,7 @@ class SmartEq extends utils.Adapter {
     this.session = {};
     this.loginRetryTimeout = null;
     this.loginRetryDelay = 30 * 1000;   // Startwert für Retry in ms
-    this.loginMaxRetryDelay = 32 * 60 * 1000 // Maximalwert für Retry in ms
+    this.loginMaxRetryDelay = 32 * 60 * 1000; // Maximalwert für Retry in ms
     this.loginInProgress = false;
     this.userAgent =
       'Device: iPhone 8 Plus; OS-version: iOS_16.7; App-Name: smart EQ control; App-Version: 4.1.0; Build: 202305260959; Language: de_DE';
@@ -55,7 +55,10 @@ class SmartEq extends utils.Adapter {
       this.cookieJar = tough.CookieJar.fromJSON(cookies.val);
     }
 
-    this.requestClient = wrapper(axios.create({ jar: this.cookieJar }));
+    this.requestClient = axios.create({
+      httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookieJar } }),
+      httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: false }),
+    });
     this.updateInterval = null;
     this.reLoginTimeout = null;
     this.refreshTokenTimeout = null;
@@ -108,37 +111,37 @@ class SmartEq extends utils.Adapter {
 
   async loginHelloWithRetry() {
     if (this.loginInProgress) {
-        this.log.debug('Login already in progress, skipping retry');
-        return;
+      this.log.debug('Login already in progress, skipping retry');
+      return;
     }
 
     this.loginInProgress = true;
 
     try {
-        await this.loginHello();
+      await this.loginHello();
 
-        if (this.session && this.session.accessToken) {
-            this.log.info('Hello Smart login successful, resetting retry delay');
-            this.loginRetryDelay = 30 * 1000;
-            this.loginInProgress = false;
-            return;
-        }
+      if (this.session && this.session.accessToken) {
+        this.log.info('Hello Smart login successful, resetting retry delay');
+        this.loginRetryDelay = 30 * 1000;
+        this.loginInProgress = false;
+        return;
+      }
 
-        throw new Error('Login did not yield access token');
-    } catch (e) {
-        this.log.warn(
-            'Hello Smart login failed, retrying in ' + Math.round(this.loginRetryDelay / 1000) + ' seconds',
-        );
+      throw new Error('Login did not yield access token');
+    } catch {
+      this.log.warn(
+        'Hello Smart login failed, retrying in ' + Math.round(this.loginRetryDelay / 1000) + ' seconds',
+      );
     }
 
     this.loginInProgress = false;
 
     this.loginRetryTimeout = setTimeout(() => {
-        this.loginHelloWithRetry();
+      this.loginHelloWithRetry();
     }, this.loginRetryDelay);
 
     this.loginRetryDelay = Math.min(this.loginRetryDelay * 2, this.loginMaxRetryDelay);
-}
+  }
 
   async loginHello() {
     this.log.info('Login into Hello Smart');
@@ -502,8 +505,6 @@ ${url}`;
           'User-Agent':
             'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
         },
-        jar: this.cookieJar,
-        withCredentials: true,
       })
         .then((res) => {
           this.log.debug(JSON.stringify(res.data));
@@ -527,8 +528,6 @@ ${url}`;
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
-        jar: this.cookieJar,
-        withCredentials: true,
         data: JSON.stringify({
           username: this.config.username,
         }),
@@ -554,8 +553,6 @@ ${url}`;
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
-        jar: this.cookieJar,
-        withCredentials: true,
         data: JSON.stringify({
           username: this.config.username,
           password: this.config.password,
@@ -589,8 +586,6 @@ ${url}`;
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
-        jar: this.cookieJar,
-        withCredentials: true,
         data: JSON.stringify({
           password: this.config.otp,
           rememberMe: false,
@@ -631,8 +626,6 @@ ${url}`;
           Referer: 'https://id.mercedes-benz.com/ciam/auth/login',
           'Accept-Language': 'de-de',
         },
-        jar: this.cookieJar,
-        withCredentials: true,
         data: 'token=' + token,
         maxRedirects: 0,
       })
@@ -659,8 +652,6 @@ ${url}`;
           'Accept-Language': 'de-de',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        jar: this.cookieJar,
-        withCredentials: true,
         data:
           'grant_type=authorization_code&code=' +
           code +
@@ -685,12 +676,10 @@ ${url}`;
     }
   }
   getCodeChallenge() {
-    let hash = '';
-    let result = '';
     const chars = '0123456789abcdef';
-    result = '';
+    let result = '';
     for (let i = 64; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-    hash = crypto.createHash('sha256').update(result).digest('base64');
+    let hash = crypto.createHash('sha256').update(result).digest('base64');
     hash = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
     return [result, hash];
@@ -904,7 +893,7 @@ ${url}`;
       this.updateInterval && clearInterval(this.updateInterval);
       this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
       callback();
-    } catch (e) {
+    } catch {
       callback();
     }
   }
