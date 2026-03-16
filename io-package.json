@@ -68,6 +68,7 @@
     "extIcon": "https://raw.githubusercontent.com/TA2k/ioBroker.smart-eq/master/admin/smart-eq.png",
     "readme": "https://github.com/TA2k/ioBroker.smart-eq/blob/master/README.md",
     "loglevel": "info",
+    "tier": 2,
     "mode": "daemon",
     "type": "vehicle",
     "compact": true,
