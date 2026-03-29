@@ -9,7 +9,7 @@
 const utils = require('@iobroker/adapter-core');
 const axios = require('axios').default;
 const qs = require('qs');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const Json2iob = require('json2iob');
 const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const tough = require('tough-cookie');
