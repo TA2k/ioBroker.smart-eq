@@ -42,6 +42,8 @@ hello smart support
 
 - (TA2k) initial release
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 
 MIT License
