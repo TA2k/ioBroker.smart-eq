@@ -30,6 +30,10 @@ smart-eq.0.vin.remote auf true setzen steuert den jeweiligen Befehl
 
 ## Changelog
 
+
+### **WORK IN PROGRESS**
+- (ioBroker-Bot) Adapter requires js-controller >= 6.0.11 now.
+
 ### 0.1.0
 
 hello smart support

@@ -58,8 +58,14 @@
       "pl": "Adapter do Smart EQ",
       "zh-cn": "智能均衡器适配器"
     },
-    "authors": ["TA2k <tombox2020@gmail.com>"],
-    "keywords": ["smart", "smart eq", "hello smart"],
+    "authors": [
+      "TA2k <tombox2020@gmail.com>"
+    ],
+    "keywords": [
+      "smart",
+      "smart eq",
+      "hello smart"
+    ],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -73,7 +79,6 @@
     "compact": true,
     "connectionType": "cloud",
     "dataSource": "poll",
-    "materialize": true,
     "plugins": {
       "sentry": {
         "dsn": "https://802f699c7aa84a62b0bcb54b31485352@sentry.iobroker.net/226"
@@ -81,17 +86,24 @@
     },
     "dependencies": [
       {
-        "js-controller": ">=3.0.0"
+        "js-controller": ">=6.0.11"
       }
     ],
     "globalDependencies": [
       {
         "admin": ">=4.0.9"
       }
-    ]
+    ],
+    "adminUI": {
+      "config": "materialize"
+    }
   },
-  "encryptedNative": ["password"],
-  "protectedNative": ["password"],
+  "encryptedNative": [
+    "password"
+  ],
+  "protectedNative": [
+    "password"
+  ],
   "native": {
     "username": "",
     "password": "",
