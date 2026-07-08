@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smart-eq",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "news": {
+      "0.1.2": {
+        "en": "Hello Smart: smart #5 support, robust login (dynamic Gigya)",
+        "de": "Hello Smart: smart #5 Unterstützung, robuster Login (dyn. Gigya)"
+      },
       "0.1.1": {
         "en": "Bugfixes",
         "de": "Fehlerbehebungen",
