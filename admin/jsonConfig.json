@@ -1,0 +1,67 @@
+{
+  "i18n": true,
+  "type": "panel",
+  "items": {
+    "type": {
+      "type": "select",
+      "label": "App Smart EQ or Hello Smart",
+      "newLine": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4,
+      "options": [
+        { "label": "Smart EQ", "value": "eq" },
+        { "label": "Hello Smart", "value": "hello" }
+      ],
+      "default": "eq"
+    },
+    "username": {
+      "type": "text",
+      "label": "App Email",
+      "newLine": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4,
+      "default": ""
+    },
+    "password": {
+      "type": "password",
+      "label": "App Password",
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4,
+      "default": "",
+      "repeat": false,
+      "visible": true
+    },
+    "otp": {
+      "type": "text",
+      "label": "OTP Code via Mail",
+      "newLine": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4,
+      "default": ""
+    },
+    "interval": {
+      "type": "number",
+      "label": "Update interval in minutes",
+      "newLine": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4,
+      "min": 0.5,
+      "default": 10
+    }
+  }
+}

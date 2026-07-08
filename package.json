@@ -11,9 +11,13 @@
       "name": "TA2k"
     }
   ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "homepage": "https://github.com/TA2k/ioBroker.smart-eq",
   "license": "MIT",
   "keywords": [
+    "ioBroker",
     "smart",
     "smart eq",
     "hello smart"
@@ -23,20 +27,19 @@
     "url": "https://github.com/TA2k/ioBroker.smart-eq"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.3.2",
-    "axios": "^1.13.6",
-    "http-cookie-agent": "^7.0.3",
-    "json-bigint": "^1.0.0",
-    "json2iob": "^2.6.22",
-    "qs": "^6.15.0",
-    "tough-cookie": "^6.0.1"
+    "@iobroker/adapter-core": "^3.4.1",
+    "axios": "^1.18.1",
+    "http-cookie-agent": "^8.0.0",
+    "json2iob": "^2.6.25",
+    "qs": "^6.15.3",
+    "tough-cookie": "^6.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@iobroker/testing": "^5.2.2",
-    "@types/node": "^25.5.0",
-    "eslint": "^10.0.3",
-    "typescript": "~5.9.3"
+    "@types/node": "^22.10.5",
+    "eslint": "^10.6.0",
+    "typescript": "~6.0.3"
   },
   "main": "main.js",
   "files": [

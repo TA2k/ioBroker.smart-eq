@@ -9,7 +9,7 @@
 const utils = require('@iobroker/adapter-core');
 const axios = require('axios').default;
 const qs = require('qs');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const Json2iob = require('json2iob');
 const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const tough = require('tough-cookie');
@@ -72,10 +72,10 @@ class SmartEq extends utils.Adapter {
       if (this.session.accessToken) {
         await this.getDeviceListHello();
         await this.updateDevicesHello();
-        this.updateInterval = setInterval(async () => {
+        this.updateInterval = this.setInterval(async () => {
           await this.updateDevicesHello();
         }, this.config.interval * 60 * 1000);
-        this.refreshTokenInterval = setInterval(() => {
+        this.refreshTokenInterval = this.setInterval(() => {
           this.loginHello();
         }, 24 * 60 * 60 * 1000);
       }
@@ -100,10 +100,10 @@ class SmartEq extends utils.Adapter {
       await this.getDeviceList();
       await this.updateDevices();
       const expires_in = (this.session.expires_in - 100) * 1000 || 3600 * 1000;
-      this.updateInterval = setInterval(async () => {
+      this.updateInterval = this.setInterval(async () => {
         await this.updateDevices();
       }, this.config.interval * 60 * 1000);
-      this.refreshTokenInterval = setInterval(() => {
+      this.refreshTokenInterval = this.setInterval(() => {
         this.refreshToken();
       }, expires_in);
     }
@@ -136,7 +136,7 @@ class SmartEq extends utils.Adapter {
 
     this.loginInProgress = false;
 
-    this.loginRetryTimeout = setTimeout(() => {
+    this.loginRetryTimeout = this.setTimeout(() => {
       this.loginHelloWithRetry();
     }, this.loginRetryDelay);
 
@@ -819,8 +819,8 @@ ${url}`;
               if (error.response.status === 401) {
                 error.response && this.log.debug(JSON.stringify(error.response.data));
                 this.log.info(element.path + ' receive 401 error. Refresh Token in 60 seconds');
-                this.refreshTokenTimeout && clearTimeout(this.refreshTokenTimeout);
-                this.refreshTokenTimeout = setTimeout(() => {
+                this.refreshTokenTimeout && this.clearTimeout(this.refreshTokenTimeout);
+                this.refreshTokenTimeout = this.setTimeout(() => {
                   this.refreshToken();
                 }, 1000 * 60);
 
@@ -864,7 +864,7 @@ ${url}`;
         this.log.error(error);
         error.response && this.log.error(JSON.stringify(error.response.data));
         this.log.error('Start relogin in 1min');
-        this.reLoginTimeout = setTimeout(async () => {
+        this.reLoginTimeout = this.setTimeout(async () => {
           await this.setStateAsync('auth.session', '{}', true);
           const adapterConfig = 'system.adapter.' + this.name + '.' + this.instance;
           const obj = await this.getForeignObjectAsync(adapterConfig);
@@ -876,7 +876,7 @@ ${url}`;
       });
   }
   sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => this.setTimeout(resolve, ms));
   }
 
   /**
@@ -886,12 +886,12 @@ ${url}`;
   onUnload(callback) {
     try {
       this.setState('info.connection', false, true);
-      this.refreshTimeout && clearTimeout(this.refreshTimeout);
-      this.reLoginTimeout && clearTimeout(this.reLoginTimeout);
-      this.refreshTokenTimeout && clearTimeout(this.refreshTokenTimeout);
-      this.loginRetryTimeout && clearTimeout(this.loginRetryTimeout);
-      this.updateInterval && clearInterval(this.updateInterval);
-      this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
+      this.refreshTimeout && this.clearTimeout(this.refreshTimeout);
+      this.reLoginTimeout && this.clearTimeout(this.reLoginTimeout);
+      this.refreshTokenTimeout && this.clearTimeout(this.refreshTokenTimeout);
+      this.loginRetryTimeout && this.clearTimeout(this.loginRetryTimeout);
+      this.updateInterval && this.clearInterval(this.updateInterval);
+      this.refreshTokenInterval && this.clearInterval(this.refreshTokenInterval);
       callback();
     } catch {
       callback();
@@ -1110,8 +1110,8 @@ ${url}`;
               }
             });
         }
-        this.refreshTimeout && clearTimeout(this.refreshTimeout);
-        this.refreshTimeout = setTimeout(async () => {
+        this.refreshTimeout && this.clearTimeout(this.refreshTimeout);
+        this.refreshTimeout = this.setTimeout(async () => {
           if (this.config.type === 'hello') {
             await this.updateDevicesHello();
           } else {

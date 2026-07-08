@@ -5,35 +5,31 @@
     "news": {
       "0.1.1": {
         "en": "Bugfixes",
-        "de": "Fehlerbehebungen"
+        "de": "Fehlerbehebungen",
+        "ru": "Исправления ошибок",
+        "pt": "Correção de bugs",
+        "nl": "Foutoplossingen",
+        "fr": "Corrections de bugs",
+        "it": "Correzioni di bug",
+        "es": "Correcciones de errores",
+        "pl": "Poprawki błędów",
+        "uk": "Виправлення помилок",
+        "zh-cn": "错误修复"
       },
       "0.1.0": {
         "en": "Add Hello Smart Support",
-        "de": "Hello Smart Unterstützung hinzufügen"
-      },
-      "0.0.6": {
-        "en": "fix login"
-      },
-      "0.0.4": {
-        "en": "fix login"
-      },
-      "0.0.3": {
-        "en": "add information to relogin"
-      },
-      "0.0.1": {
-        "en": "initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Начальная версия",
-        "pt": "lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Première version",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "zh-cn": "首次出版"
+        "de": "Hello Smart Unterstützung hinzufügen",
+        "ru": "Добавлена поддержка Hello Smart",
+        "pt": "Adicionar suporte Hello Smart",
+        "nl": "Ondersteuning voor Hello Smart toegevoegd",
+        "fr": "Ajout du support Hello Smart",
+        "it": "Aggiunto supporto Hello Smart",
+        "es": "Añadir soporte para Hello Smart",
+        "pl": "Dodano obsługę Hello Smart",
+        "uk": "Додано підтримку Hello Smart",
+        "zh-cn": "添加 Hello Smart 支持"
       }
     },
-    "title": "Smart EQ / Hello Smart",
     "titleLang": {
       "en": "Smart EQ / Hello Smart",
       "de": "Smart EQ / Hello Smart",
@@ -44,6 +40,7 @@
       "it": "Equalizzatore intelligente",
       "es": "Ecualizador inteligente",
       "pl": "Inteligentny korektor",
+      "uk": "Розумний еквалайзер",
       "zh-cn": "智能均衡器"
     },
     "desc": {
@@ -56,13 +53,17 @@
       "it": "Adattatore per Smart EQ",
       "es": "Adaptador para Smart EQ",
       "pl": "Adapter do Smart EQ",
+      "uk": "Адаптер для Smart EQ",
       "zh-cn": "智能均衡器适配器"
     },
     "authors": ["TA2k <tombox2020@gmail.com>"],
     "keywords": ["smart", "smart eq", "hello smart"],
-    "license": "MIT",
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "tier": 3,
     "platform": "Javascript/Node.js",
-    "main": "main.js",
     "icon": "smart-eq.png",
     "enabled": true,
     "extIcon": "https://raw.githubusercontent.com/TA2k/ioBroker.smart-eq/master/admin/smart-eq.png",
@@ -73,7 +74,9 @@
     "compact": true,
     "connectionType": "cloud",
     "dataSource": "poll",
-    "materialize": true,
+    "adminUI": {
+      "config": "json"
+    },
     "plugins": {
       "sentry": {
         "dsn": "https://802f699c7aa84a62b0bcb54b31485352@sentry.iobroker.net/226"
@@ -81,12 +84,12 @@
     },
     "dependencies": [
       {
-        "js-controller": ">=3.0.0"
+        "js-controller": ">=6.0.11"
       }
     ],
     "globalDependencies": [
       {
-        "admin": ">=4.0.9"
+        "admin": ">=7.6.20"
       }
     ]
   },
