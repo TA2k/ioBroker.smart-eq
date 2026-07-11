@@ -34,6 +34,10 @@ smart-eq.0.vin.remote auf true setzen steuert den jeweiligen Befehl
 
 ## Changelog
 
+
+### **WORK IN PROGRESS**
+- (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.
+
 ### 0.1.1
 
 - (TA2k) Bugfixes
