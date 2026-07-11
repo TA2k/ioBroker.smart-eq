@@ -60,8 +60,14 @@
       "uk": "Адаптер для Smart EQ",
       "zh-cn": "智能均衡器适配器"
     },
-    "authors": ["TA2k <tombox2020@gmail.com>"],
-    "keywords": ["smart", "smart eq", "hello smart"],
+    "authors": [
+      "TA2k <tombox2020@gmail.com>"
+    ],
+    "keywords": [
+      "smart",
+      "smart eq",
+      "hello smart"
+    ],
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
@@ -93,12 +99,16 @@
     ],
     "globalDependencies": [
       {
-        "admin": ">=7.6.20"
+        "admin": ">=7.8.23"
       }
     ]
   },
-  "encryptedNative": ["password"],
-  "protectedNative": ["password"],
+  "encryptedNative": [
+    "password"
+  ],
+  "protectedNative": [
+    "password"
+  ],
   "native": {
     "username": "",
     "password": "",
